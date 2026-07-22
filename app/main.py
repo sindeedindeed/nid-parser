@@ -13,6 +13,12 @@ async def parse_nid(
     back_image: UploadFile = File(..., description="Back side")
 ):
     
+    if not front_image or not back_image:
+        raise HTTPException(
+            status_code=400,
+            detail="Both the front and back side of the NID are required"
+        )
+    
     # using from utils.py file
     front_bytes = await validate_image(front_image, "front")
     back_bytes = await validate_image(back_image, "back")
