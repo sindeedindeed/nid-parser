@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NID Intake</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ink: #242424;
+            --ink-soft: #333333;
+            --paper: #FFFFFF;
+            --paper-dim: #F9F9F9;
+            --red: #E00000;
+            --red-bright: #FF1A1A;
+            --text-dark: #000000;
+            --text-mute: #666666;
+            --line: rgba(0, 0, 0, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--ink);
+            color: var(--paper);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 20px;
+            position: relative;
+            overflow-x: hidden;
+            cursor: default;
+        }
+
+        .weave {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            opacity: 0.16;
+            pointer-events: none;
+        }
+
+        .stage {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 620px;
+        }
+
+        .mark {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 34px;
+            user-select: none;
+        }
+
+        .mark svg {
+            flex-shrink: 0;
+        }
+
+        .mark-text h1 {
+            font-family: Georgia, Garamond, serif;
+            font-weight: 500;
+            font-size: 2.1rem;
+            letter-spacing: -0.01em;
+            margin: 0;
+            color: var(--paper);
+        }
+
+        .card {
+            background: var(--paper);
+            border-radius: 6px;
+            padding: 40px;
+            color: var(--text-dark);
+            box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.55);
+            position: relative;
+            min-height: 400px;
+        }
+
+        p.lede {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--text-mute);
+            margin: 0 0 28px;
+            letter-spacing: 0.01em;
+            user-select: none;
+        }
+
+        /* State Management */
+        .view-state {
+            display: none;
+            opacity: 0;
+        }
+
+        .view-state.active {
+            display: block;
+            animation: flowIn 0.5s ease-out forwards;
+        }
+
+        @keyframes flowIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropzones {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 28px;
+            user-select: none;
+        }
+
+        .drop {
+            position: relative;
+            border: 1.5px dashed var(--line);
+            border-radius: 4px;
+            aspect-ratio: 4 / 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+            background: rgba(255, 255, 255, 0.35);
+            overflow: hidden;
+            text-align: center;
+            padding: 12px;
+        }
+
+        .drop:hover,
+        .drop.drag {
+            border-color: var(--red);
+            background: rgba(224, 0, 0, 0.04);
+        }
+
+        .drop.filled {
+            border-style: solid;
+            border-color: var(--red);
+        }
+
+        .drop input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .drop svg {
+            color: var(--text-mute);
+            transition: color 0.2s ease;
+        }
+
+        .drop:hover svg {
+            color: var(--red);
+        }
+
+        .drop .side {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-mute);
+        }
+
+        .drop .hint {
+            font-size: 0.72rem;
+            color: var(--text-mute);
+        }
+
+        .drop img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .drop .trash-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--paper);
+            color: var(--ink);
+            border: 1.5px solid var(--ink);
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .drop .trash-btn:hover {
+            background: var(--red);
+            color: var(--paper);
+            border-color: var(--red);
+            transform: scale(1.05);
+        }
+
+        .drop .trash-btn svg {
+            color: inherit !important;
+            width: 16px;
+            height: 16px;
+        }
+
+        button.action-btn {
+            width: 100%;
+            padding: 15px 18px;
+            background: var(--ink);
+            color: var(--paper);
+            border: 2px solid var(--ink);
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        button.action-btn:hover {
+            background: var(--red);
+            border-color: var(--red);
+        }
+
+        button.action-btn:active {
+            transform: scale(0.99);
+        }
+
+        button.action-btn.outline {
+            background: transparent;
+            color: var(--ink);
+            margin-top: 24px;
+        }
+
+        button.action-btn.outline:hover {
+            background: var(--paper-dim);
+            border-color: var(--text-dark);
+        }
+
+        button.action-btn .arrow {
+            transition: transform 0.2s ease;
+        }
+
+        button.action-btn:hover .arrow {
+            transform: translateX(3px);
+        }
+
+        /* Loading State Styles */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 320px;
+            text-align: center;
+            user-select: none;
+        }
+
+        .spinner-ring {
+            width: 64px;
+            height: 64px;
+            border: 5px solid var(--line);
+            border-top: 5px solid var(--red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 24px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text-mute);
+            font-size: 0.95rem;
+            letter-spacing: 0.05em;
+        }
+
+        #error-msg {
+            color: var(--red);
+            text-align: center;
+            font-size: 0.85rem;
+            margin-top: 16px;
+            display: none;
+        }
+
+        /* Result State Styles */
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--line);
+            user-select: none;
+        }
+
+        .result-title {
+            font-family: Georgia, Garamond, serif;
+            font-weight: 500;
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--text-dark);
+        }
+
+        .toggle-btn {
+            background: var(--paper-dim);
+            border: 1px solid var(--line);
+            color: var(--text-dark);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn:hover {
+            border-color: var(--text-mute);
+            background: var(--paper);
+        }
+
+        .result-scroll-area {
+            height: 280px;
+            overflow-y: auto;
+            background: var(--paper-dim);
+            border-radius: 6px;
+            padding: 20px;
+            border: 1px solid var(--line);
+        }
+
+        #result-plaintext,
+        #result-json {
+            cursor: text;
+        }
+
+        .kv-pair {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .kv-pair:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .kv-pair:first-child {
+            padding-top: 0;
+        }
+
+        .kv-key {
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--text-mute);
+            text-transform: capitalize;
+            flex-shrink: 0;
+            margin-right: 16px;
+        }
+
+        .kv-val {
+            font-family: Georgia, Garamond, serif;
+            font-weight: 400;
+            font-size: 1rem;
+            color: var(--text-dark);
+            text-align: right;
+            word-break: break-word;
+        }
+
+        pre.result-json {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8rem;
+            margin: 0;
+            color: var(--text-dark);
+        }
+
+        /* Scrollbar Styling */
+        .result-scroll-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .result-scroll-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .result-scroll-area::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 28px 22px;
+            }
+
+            .dropzones {
+                grid-template-columns: 1fr;
+            }
+
+            .kv-pair {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .kv-val {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <svg class="weave" preserveAspectRatio="xMidYMid slice" viewBox="0 0 800 800">
+        <defs>
+            <pattern id="waves" width="80" height="80" patternUnits="userSpaceOnUse">
+                <path d="M0 40 Q 20 0 40 40 T 80 40" fill="none" stroke="#FF1A1A" stroke-width="0.6" />
+                <path d="M0 20 Q 20 -20 40 20 T 80 20" fill="none" stroke="#666666" stroke-width="0.4" />
+                <path d="M0 60 Q 20 20 40 60 T 80 60" fill="none" stroke="#FF1A1A" stroke-width="0.4" />
+            </pattern>
+        </defs>
+        <rect width="800" height="800" fill="url(#waves)" />
+    </svg>
+
+    <div class="stage">
+        <div class="mark">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <circle cx="20" cy="20" r="18.5" stroke="#FF1A1A" stroke-width="1" />
+                <circle cx="20" cy="20" r="13.5" stroke="#000000" stroke-width="0.75" />
+                <circle cx="20" cy="20" r="4" fill="#FF1A1A" />
+            </svg>
+            <div class="mark-text">
+                <h1>Check NID Details</h1>
+            </div>
+        </div>
+
+        <div class="card">
+
+            <!-- STATE 1: UPLOAD FORM -->
+            <div id="state-upload" class="view-state active">
+                <p class="lede">Please both sides.</p>
+
+                <form id="uploadForm">
+                    <div class="dropzones">
+                        <!-- Keep the IDs as 'front' and 'back' so the JavaScript and Backend don't break -->
+                        <label class="drop" id="dropFront" for="front">
+                            <button type="button" class="trash-btn" style="display:none;" aria-label="Remove image">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                    </path>
+                                </svg>
+                            </button>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <rect x="3" y="5" width="18" height="14" rx="2" />
+                                <circle cx="9" cy="10" r="2" />
+                                <path d="M21 16l-5-5-4 4-3-3-6 6" />
+                            </svg>
+                            <span class="side">Side 1</span>
+                            <span class="hint">Click or drop image</span>
+                            <input type="file" id="front" accept="image/*" required>
+                        </label>
+
+                        <label class="drop" id="dropBack" for="back">
+                            <button type="button" class="trash-btn" style="display:none;" aria-label="Remove image">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                    </path>
+                                </svg>
+                            </button>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <rect x="3" y="5" width="18" height="14" rx="2" />
+                                <circle cx="9" cy="10" r="2" />
+                                <path d="M21 16l-5-5-4 4-3-3-6 6" />
+                            </svg>
+                            <span class="side">Side 2</span>
+                            <span class="hint">Click or drop image</span>
+                            <input type="file" id="back" accept="image/*" required>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="action-btn">
+                        <span>Parse Document</span>
+                        <span class="arrow">→</span>
+                    </button>
+                    <div id="error-msg"></div>
+                </form>
+            </div>
+            <!-- STATE 2: LOADING -->
+            <div id="state-loading" class="view-state">
+                <div class="loading-container">
+                    <div class="spinner-ring"></div>
+                    <div class="loading-text">Processing...</div>
+                </div>
+            </div>
+
+            <!-- STATE 3: RESULTS -->
+            <div id="state-result" class="view-state">
+                <div class="result-header">
+                    <h2 class="result-title">Extracted Details</h2>
+                    <button type="button" id="toggleView" class="toggle-btn">View Raw JSON</button>
+                </div>
+
+                <div class="result-scroll-area">
+                    <div id="result-plaintext"></div>
+                    <pre id="result-json" class="result-json" style="display:none;"></pre>
+                </div>
+
+                <button type="button" id="goBack" class="action-btn outline">
+                    <span>Scan Another Document</span>
+                    <span class="arrow">↺</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // UI State Manager
+        function switchState(stateId) {
+            document.querySelectorAll('.view-state').forEach(el => {
+                el.classList.remove('active');
+            });
+            const activeEl = document.getElementById(stateId);
+            activeEl.classList.add('active');
+        }
+
+        // Drag and Drop Logic
+        function wireDrop(dropId, inputId) {
+            const drop = document.getElementById(dropId);
+            const input = document.getElementById(inputId);
+            const trashBtn = drop.querySelector('.trash-btn');
+
+            const showPreview = (file) => {
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    let img = drop.querySelector('img');
+                    if (!img) {
+                        img = document.createElement('img');
+                        drop.prepend(img);
+                    }
+                    img.src = e.target.result;
+                    drop.classList.add('filled');
+                    trashBtn.style.display = 'flex';
+                };
+                reader.readAsDataURL(file);
+            };
+
+            trashBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                input.value = '';
+                const img = drop.querySelector('img');
+                if (img) img.remove();
+                drop.classList.remove('filled');
+                trashBtn.style.display = 'none';
+            });
+
+            input.addEventListener('change', () => showPreview(input.files[0]));
+
+            ['dragover', 'dragleave', 'drop'].forEach(evt => {
+                drop.addEventListener(evt, (e) => {
+                    e.preventDefault();
+                    if (evt === 'dragover') drop.classList.add('drag');
+                    else drop.classList.remove('drag');
+                });
+            });
+
+            drop.addEventListener('drop', (e) => {
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    input.files = e.dataTransfer.files;
+                    showPreview(file);
+                }
+            });
+        }
+
+        wireDrop('dropFront', 'front');
+        wireDrop('dropBack', 'back');
+
+        // Toggle JSON View
+        let showingJson = false;
+        document.getElementById('toggleView').addEventListener('click', (e) => {
+            showingJson = !showingJson;
+            document.getElementById('result-plaintext').style.display = showingJson ? 'none' : 'block';
+            document.getElementById('result-json').style.display = showingJson ? 'block' : 'none';
+            e.target.textContent = showingJson ? 'View Formatted Text' : 'View Raw JSON';
+        });
+
+        // Reset App State
+        document.getElementById('goBack').addEventListener('click', () => {
+            document.getElementById('uploadForm').reset();
+            ['dropFront', 'dropBack'].forEach(id => {
+                const drop = document.getElementById(id);
+                const img = drop.querySelector('img');
+                if (img) img.remove();
+                drop.classList.remove('filled');
+                drop.querySelector('.trash-btn').style.display = 'none';
+            });
+            document.getElementById('error-msg').style.display = 'none';
+            showingJson = false;
+            document.getElementById('result-plaintext').style.display = 'block';
+            document.getElementById('result-json').style.display = 'none';
+            document.getElementById('toggleView').textContent = 'View Raw JSON';
+
+            switchState('state-upload');
+        });
+
+        // Form Submission
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const errorMsg = document.getElementById('error-msg');
+            errorMsg.style.display = 'none';
+
+            // Transition to loading screen
+            switchState('state-loading');
+
+            const formData = new FormData();
+            formData.append('front_image', document.getElementById('front').files[0]);
+            formData.append('back_image', document.getElementById('back').files[0]);
+
+            try {
+                const response = await fetch('/parse-nid', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                // Intercept the data to delete the blood group field from the UI
+                delete data.bloodGroup;
+                delete data.blood_group;
+
+                if (!response.ok) {
+                    throw new Error('Server returned an error.');
+                }
+
+                // Format plaintext using Flexbox hierarchy
+                let ptHtml = '';
+                for (const [key, value] of Object.entries(data)) {
+                    const formattedKey = key.replace(/([A-Z])/g, ' $1').trim();
+                    let displayVal = value || 'N/A';
+
+                    // Convert YYYY-MM-DD to DD/MM/YYYY for local formatting
+                    if (value && (key.toLowerCase().includes('date') || key.toLowerCase().includes('dob'))) {
+                        const dateParts = value.split('-');
+                        if (dateParts.length === 3) {
+                            // backend returns standard YYYY-MM-DD
+                            displayVal = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                        }
+                    }
+
+                    ptHtml += `
+                        <div class="kv-pair">
+                            <div class="kv-key">${formattedKey}</div>
+                            <div class="kv-val">${displayVal}</div>
+                        </div>`;
+                }
+
+                document.getElementById('result-plaintext').innerHTML = ptHtml;
+                document.getElementById('result-json').textContent = JSON.stringify(data, null, 2);
+
+                // Transition to results screen
+                switchState('state-result');
+
+            } catch (err) {
+                // If it fails, go back to the form and show error
+                switchState('state-upload');
+                errorMsg.textContent = 'Network error or unable to process the document.';
+                errorMsg.style.display = 'block';
+            }
+        };
+    </script>
+</body>
+
+</html>
