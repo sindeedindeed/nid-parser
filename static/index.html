@@ -12,8 +12,8 @@
         rel="stylesheet">
     <style>
         :root {
-            --ink: #000000;
-            --ink-soft: #1A1A1A;
+            --ink: #242424;
+            --ink-soft: #333333;
             --paper: #FFFFFF;
             --paper-dim: #F9F9F9;
             --red: #E00000;
@@ -453,7 +453,7 @@
         <defs>
             <pattern id="waves" width="80" height="80" patternUnits="userSpaceOnUse">
                 <path d="M0 40 Q 20 0 40 40 T 80 40" fill="none" stroke="#FF1A1A" stroke-width="0.6" />
-                <path d="M0 20 Q 20 -20 40 20 T 80 20" fill="none" stroke="#000000" stroke-width="0.4" />
+                <path d="M0 20 Q 20 -20 40 20 T 80 20" fill="none" stroke="#666666" stroke-width="0.4" />
                 <path d="M0 60 Q 20 20 40 60 T 80 60" fill="none" stroke="#FF1A1A" stroke-width="0.4" />
             </pattern>
         </defs>
@@ -476,10 +476,11 @@
 
             <!-- STATE 1: UPLOAD FORM -->
             <div id="state-upload" class="view-state active">
-                <p class="lede">Please upload both front and back sides separately.</p>
+                <p class="lede">Please both sides.</p>
 
                 <form id="uploadForm">
                     <div class="dropzones">
+                        <!-- Keep the IDs as 'front' and 'back' so the JavaScript and Backend don't break -->
                         <label class="drop" id="dropFront" for="front">
                             <button type="button" class="trash-btn" style="display:none;" aria-label="Remove image">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -496,7 +497,7 @@
                                 <circle cx="9" cy="10" r="2" />
                                 <path d="M21 16l-5-5-4 4-3-3-6 6" />
                             </svg>
-                            <span class="side">Front</span>
+                            <span class="side">Side 1</span>
                             <span class="hint">Click or drop image</span>
                             <input type="file" id="front" accept="image/*" required>
                         </label>
@@ -517,7 +518,7 @@
                                 <circle cx="9" cy="10" r="2" />
                                 <path d="M21 16l-5-5-4 4-3-3-6 6" />
                             </svg>
-                            <span class="side">Back</span>
+                            <span class="side">Side 2</span>
                             <span class="hint">Click or drop image</span>
                             <input type="file" id="back" accept="image/*" required>
                         </label>
@@ -530,7 +531,6 @@
                     <div id="error-msg"></div>
                 </form>
             </div>
-
             <!-- STATE 2: LOADING -->
             <div id="state-loading" class="view-state">
                 <div class="loading-container">
