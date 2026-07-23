@@ -681,10 +681,21 @@
                 let ptHtml = '';
                 for (const [key, value] of Object.entries(data)) {
                     const formattedKey = key.replace(/([A-Z])/g, ' $1').trim();
+                    let displayVal = value || 'N/A';
+
+                    // Convert YYYY-MM-DD to DD/MM/YYYY for local formatting
+                    if (value && (key.toLowerCase().includes('date') || key.toLowerCase().includes('dob'))) {
+                        const dateParts = value.split('-');
+                        if (dateParts.length === 3) {
+                            // backend returns standard YYYY-MM-DD
+                            displayVal = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                        }
+                    }
+
                     ptHtml += `
                         <div class="kv-pair">
                             <div class="kv-key">${formattedKey}</div>
-                            <div class="kv-val">${value || 'N/A'}</div>
+                            <div class="kv-val">${displayVal}</div>
                         </div>`;
                 }
 
