@@ -280,18 +280,67 @@
             animation: pulse 1.3s infinite;
         }
 
-        pre {
+        .result-box {
             background: var(--paper-dim);
             border-left: 3px solid var(--red);
             border-radius: 2px;
-            padding: 16px 18px;
-            overflow-x: auto;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.78rem;
-            line-height: 1.5;
-            display: none;
             margin-top: 20px;
             color: var(--text-dark);
+            overflow: hidden;
+            display: none;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            background: rgba(0, 0, 0, 0.04);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .result-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .toggle-btn {
+            background: transparent;
+            border: 1px solid var(--text-mute);
+            color: var(--text-dark);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: background 0.2s ease;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .result-body {
+            padding: 16px 18px;
+            font-size: 0.85rem;
+        }
+
+        pre.result-body {
+            font-family: 'IBM Plex Mono', monospace;
+            margin: 0;
+            overflow-x: auto;
+        }
+
+        .kv-pair {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .kv-key {
+            font-weight: 600;
+            color: var(--text-mute);
+            margin-right: 8px;
+            text-transform: capitalize;
         }
 
         @keyframes slideUp {
@@ -415,7 +464,15 @@
             </form>
 
             <div id="status"></div>
-            <pre id="result"></pre>
+
+            <div id="result-box" class="result-box">
+                <div class="result-header">
+                    <span class="result-title">Extracted Details</span>
+                    <button type="button" id="toggleView" class="toggle-btn">Show JSON</button>
+                </div>
+                <div id="result-plaintext" class="result-body"></div>
+                <pre id="result-json" class="result-body" style="display:none;"></pre>
+            </div>
         </div>
     </div>
 
@@ -473,16 +530,27 @@
         wireDrop('dropFront', 'front');
         wireDrop('dropBack', 'back');
 
+        let showingJson = false;
+
+        document.getElementById('toggleView').addEventListener('click', (e) => {
+            showingJson = !showingJson;
+            document.getElementById('result-plaintext').style.display = showingJson ? 'none' : 'block';
+            document.getElementById('result-json').style.display = showingJson ? 'block' : 'none';
+            e.target.textContent = showingJson ? 'Show Plaintext' : 'Show JSON';
+        });
+
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
             const statusEl = document.getElementById('status');
-            const resultEl = document.getElementById('result');
+            const resultBox = document.getElementById('result-box');
+            const resultPt = document.getElementById('result-plaintext');
+            const resultJson = document.getElementById('result-json');
             const submitBtn = e.target.querySelector('button.submit');
 
             statusEl.textContent = 'Reading document…';
             statusEl.className = 'loading';
-            resultEl.style.display = 'none';
-            resultEl.className = '';
+            resultBox.style.display = 'none';
+            resultBox.className = 'result-box';
             submitBtn.disabled = true;
 
             const formData = new FormData();
@@ -497,10 +565,26 @@
                 statusEl.textContent = response.ok ? 'Done' : 'Something went wrong';
                 if (!response.ok) statusEl.className = 'err';
 
-                resultEl.textContent = JSON.stringify(data, null, 2);
-                resultEl.style.display = 'block';
-                void resultEl.offsetWidth;
-                resultEl.className = 'fade-in';
+                // Format plaintext
+                let ptHtml = '';
+                for (const [key, value] of Object.entries(data)) {
+                    // Convert camelCase keys to spaced strings for readibility
+                    const formattedKey = key.replace(/([A-Z])/g, ' $1').trim();
+                    ptHtml += `<div class="kv-pair"><span class="kv-key">${formattedKey}:</span> <span class="kv-val">${value || 'N/A'}</span></div>`;
+                }
+
+                resultPt.innerHTML = ptHtml;
+                resultJson.textContent = JSON.stringify(data, null, 2);
+
+                // Reset view state to plaintext default
+                showingJson = false;
+                document.getElementById('toggleView').textContent = 'Show JSON';
+                resultPt.style.display = 'block';
+                resultJson.style.display = 'none';
+
+                resultBox.style.display = 'block';
+                void resultBox.offsetWidth; // Trigger reflow for animation
+                resultBox.classList.add('fade-in');
             } catch (err) {
                 statusEl.className = 'err';
                 statusEl.textContent = 'Could not reach the server.';
