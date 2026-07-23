@@ -8,20 +8,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <style>
         :root {
             --ink: #000000;
             --ink-soft: #1A1A1A;
             --paper: #FFFFFF;
-            --paper-dim: #F4F4F4;
+            --paper-dim: #F9F9F9;
             --red: #E00000;
             --red-bright: #FF1A1A;
-            --dark-accent: #000000;
             --text-dark: #000000;
             --text-mute: #666666;
-            --line: rgba(0, 0, 0, 0.15);
+            --line: rgba(0, 0, 0, 0.12);
         }
 
         * {
@@ -40,9 +39,9 @@
             padding: 48px 20px;
             position: relative;
             overflow-x: hidden;
+            cursor: default;
         }
 
-        /* Guilloché-style security pattern, faint, behind everything */
         .weave {
             position: fixed;
             inset: 0;
@@ -63,25 +62,17 @@
             align-items: center;
             gap: 14px;
             margin-bottom: 34px;
+            user-select: none;
         }
 
         .mark svg {
             flex-shrink: 0;
         }
 
-        .mark-text .eyebrow {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.68rem;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: var(--red-bright);
-            margin: 0 0 4px;
-        }
-
         .mark-text h1 {
-            font-family: 'Fraunces', serif;
+            font-family: Georgia, Garamond, serif;
             font-weight: 500;
-            font-size: 1.9rem;
+            font-size: 2.1rem;
             letter-spacing: -0.01em;
             margin: 0;
             color: var(--paper);
@@ -93,14 +84,40 @@
             padding: 40px;
             color: var(--text-dark);
             box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.55);
+            position: relative;
+            min-height: 400px;
         }
 
-        .card p.lede {
+        p.lede {
             font-family: 'IBM Plex Mono', monospace;
             font-size: 0.78rem;
             color: var(--text-mute);
             margin: 0 0 28px;
             letter-spacing: 0.01em;
+            user-select: none;
+        }
+
+        /* State Management */
+        .view-state {
+            display: none;
+            opacity: 0;
+        }
+
+        .view-state.active {
+            display: block;
+            animation: flowIn 0.5s ease-out forwards;
+        }
+
+        @keyframes flowIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .dropzones {
@@ -108,6 +125,7 @@
             grid-template-columns: 1fr 1fr;
             gap: 16px;
             margin-bottom: 28px;
+            user-select: none;
         }
 
         .drop {
@@ -131,7 +149,7 @@
         .drop:hover,
         .drop.drag {
             border-color: var(--red);
-            background: rgba(224, 0, 0, 0.06);
+            background: rgba(224, 0, 0, 0.04);
         }
 
         .drop.filled {
@@ -208,12 +226,12 @@
             height: 16px;
         }
 
-        button.submit {
+        button.action-btn {
             width: 100%;
             padding: 15px 18px;
             background: var(--ink);
             color: var(--paper);
-            border: none;
+            border: 2px solid var(--ink);
             border-radius: 4px;
             font-family: 'Inter', sans-serif;
             font-size: 0.92rem;
@@ -223,140 +241,189 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: background-color 0.2s ease, transform 0.08s ease;
+            transition: all 0.2s ease;
+            user-select: none;
         }
 
-        button.submit:hover {
+        button.action-btn:hover {
             background: var(--red);
+            border-color: var(--red);
         }
 
-        button.submit:active {
+        button.action-btn:active {
             transform: scale(0.99);
         }
 
-        button.submit:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
+        button.action-btn.outline {
+            background: transparent;
+            color: var(--ink);
+            margin-top: 24px;
         }
 
-        button.submit .arrow {
+        button.action-btn.outline:hover {
+            background: var(--paper-dim);
+            border-color: var(--text-dark);
+        }
+
+        button.action-btn .arrow {
             transition: transform 0.2s ease;
         }
 
-        button.submit:hover .arrow {
+        button.action-btn:hover .arrow {
             transform: translateX(3px);
         }
 
-        #status {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.78rem;
+        /* Loading State Styles */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 320px;
             text-align: center;
-            margin-top: 18px;
-            color: var(--text-mute);
-            min-height: 1em;
+            user-select: none;
         }
 
-        #status.loading {
-            color: var(--red);
+        .spinner-ring {
+            width: 64px;
+            height: 64px;
+            border: 5px solid var(--line);
+            border-top: 5px solid var(--red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 24px;
         }
 
-        #status.err {
-            color: var(--red);
-        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
 
-        @keyframes pulse {
-
-            0%,
             100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.35;
+                transform: rotate(360deg);
             }
         }
 
-        .loading {
-            animation: pulse 1.3s infinite;
+        .loading-text {
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text-mute);
+            font-size: 0.95rem;
+            letter-spacing: 0.05em;
         }
 
-        .result-box {
-            background: var(--paper-dim);
-            border-left: 3px solid var(--red);
-            border-radius: 2px;
-            margin-top: 20px;
-            color: var(--text-dark);
-            overflow: hidden;
+        #error-msg {
+            color: var(--red);
+            text-align: center;
+            font-size: 0.85rem;
+            margin-top: 16px;
             display: none;
         }
 
+        /* Result State Styles */
         .result-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 18px;
-            background: rgba(0, 0, 0, 0.04);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--line);
+            user-select: none;
         }
 
         .result-title {
-            font-weight: 600;
-            font-size: 0.85rem;
+            font-family: Georgia, Garamond, serif;
+            font-weight: 500;
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--text-dark);
         }
 
         .toggle-btn {
-            background: transparent;
-            border: 1px solid var(--text-mute);
+            background: var(--paper-dim);
+            border: 1px solid var(--line);
             color: var(--text-dark);
-            padding: 4px 10px;
+            padding: 6px 12px;
             border-radius: 4px;
             font-size: 0.75rem;
             cursor: pointer;
             font-family: 'Inter', sans-serif;
-            transition: background 0.2s ease;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
 
         .toggle-btn:hover {
-            background: rgba(0, 0, 0, 0.05);
+            border-color: var(--text-mute);
+            background: var(--paper);
         }
 
-        .result-body {
-            padding: 16px 18px;
-            font-size: 0.85rem;
+        .result-scroll-area {
+            height: 280px;
+            overflow-y: auto;
+            background: var(--paper-dim);
+            border-radius: 6px;
+            padding: 20px;
+            border: 1px solid var(--line);
         }
 
-        pre.result-body {
-            font-family: 'IBM Plex Mono', monospace;
-            margin: 0;
-            overflow-x: auto;
+        #result-plaintext,
+        #result-json {
+            cursor: text;
         }
 
         .kv-pair {
-            margin-bottom: 8px;
-            line-height: 1.5;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .kv-pair:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .kv-pair:first-child {
+            padding-top: 0;
         }
 
         .kv-key {
-            font-weight: 600;
+            font-weight: 500;
+            font-size: 0.85rem;
             color: var(--text-mute);
-            margin-right: 8px;
             text-transform: capitalize;
+            flex-shrink: 0;
+            margin-right: 16px;
         }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .kv-val {
+            font-family: Georgia, Garamond, serif;
+            font-weight: 400;
+            font-size: 1rem;
+            color: var(--text-dark);
+            text-align: right;
+            word-break: break-word;
         }
 
-        .fade-in {
-            animation: slideUp 0.35s ease-out forwards;
+        pre.result-json {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8rem;
+            margin: 0;
+            color: var(--text-dark);
+        }
+
+        /* Scrollbar Styling */
+        .result-scroll-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .result-scroll-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .result-scroll-area::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
         }
 
         @media (max-width: 480px) {
@@ -367,20 +434,16 @@
             .dropzones {
                 grid-template-columns: 1fr;
             }
-        }
 
-        @media (prefers-reduced-motion: reduce) {
-
-            .loading,
-            .fade-in {
-                animation: none;
+            .kv-pair {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
             }
-        }
 
-        button.submit:focus-visible,
-        .drop:focus-within {
-            outline: 2px solid var(--red-bright);
-            outline-offset: 2px;
+            .kv-val {
+                text-align: left;
+            }
         }
     </style>
 </head>
@@ -410,73 +473,104 @@
         </div>
 
         <div class="card">
-            <p class="lede">Please upload both front and back sides separately.</p>
 
-            <form id="uploadForm">
-                <div class="dropzones">
-                    <label class="drop" id="dropFront" for="front">
-                        <button type="button" class="trash-btn" style="display:none;" aria-label="Remove image">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path
-                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                </path>
+            <!-- STATE 1: UPLOAD FORM -->
+            <div id="state-upload" class="view-state active">
+                <p class="lede">Please upload both front and back sides separately.</p>
+
+                <form id="uploadForm">
+                    <div class="dropzones">
+                        <label class="drop" id="dropFront" for="front">
+                            <button type="button" class="trash-btn" style="display:none;" aria-label="Remove image">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                    </path>
+                                </svg>
+                            </button>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <rect x="3" y="5" width="18" height="14" rx="2" />
+                                <circle cx="9" cy="10" r="2" />
+                                <path d="M21 16l-5-5-4 4-3-3-6 6" />
                             </svg>
-                        </button>
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5">
-                            <rect x="3" y="5" width="18" height="14" rx="2" />
-                            <circle cx="9" cy="10" r="2" />
-                            <path d="M21 16l-5-5-4 4-3-3-6 6" />
-                        </svg>
-                        <span class="side">Front</span>
-                        <span class="hint">Click or drop image</span>
-                        <input type="file" id="front" accept="image/*" required>
-                    </label>
+                            <span class="side">Front</span>
+                            <span class="hint">Click or drop image</span>
+                            <input type="file" id="front" accept="image/*" required>
+                        </label>
 
-                    <label class="drop" id="dropBack" for="back">
-                        <button type="button" class="trash-btn" style="display:none;" aria-label="Remove image">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path
-                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                </path>
+                        <label class="drop" id="dropBack" for="back">
+                            <button type="button" class="trash-btn" style="display:none;" aria-label="Remove image">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                    </path>
+                                </svg>
+                            </button>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <rect x="3" y="5" width="18" height="14" rx="2" />
+                                <circle cx="9" cy="10" r="2" />
+                                <path d="M21 16l-5-5-4 4-3-3-6 6" />
                             </svg>
-                        </button>
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.5">
-                            <rect x="3" y="5" width="18" height="14" rx="2" />
-                            <circle cx="9" cy="10" r="2" />
-                            <path d="M21 16l-5-5-4 4-3-3-6 6" />
-                        </svg>
-                        <span class="side">Back</span>
-                        <span class="hint">Click or drop image</span>
-                        <input type="file" id="back" accept="image/*" required>
-                    </label>
-                </div>
+                            <span class="side">Back</span>
+                            <span class="hint">Click or drop image</span>
+                            <input type="file" id="back" accept="image/*" required>
+                        </label>
+                    </div>
 
-                <button type="submit" class="submit">
-                    <span>Parse ID</span>
-                    <span class="arrow">→</span>
-                </button>
-            </form>
-
-            <div id="status"></div>
-
-            <div id="result-box" class="result-box">
-                <div class="result-header">
-                    <span class="result-title">Extracted Details</span>
-                    <button type="button" id="toggleView" class="toggle-btn">Show JSON</button>
-                </div>
-                <div id="result-plaintext" class="result-body"></div>
-                <pre id="result-json" class="result-body" style="display:none;"></pre>
+                    <button type="submit" class="action-btn">
+                        <span>Parse Document</span>
+                        <span class="arrow">→</span>
+                    </button>
+                    <div id="error-msg"></div>
+                </form>
             </div>
+
+            <!-- STATE 2: LOADING -->
+            <div id="state-loading" class="view-state">
+                <div class="loading-container">
+                    <div class="spinner-ring"></div>
+                    <div class="loading-text">Processing...</div>
+                </div>
+            </div>
+
+            <!-- STATE 3: RESULTS -->
+            <div id="state-result" class="view-state">
+                <div class="result-header">
+                    <h2 class="result-title">Extracted Details</h2>
+                    <button type="button" id="toggleView" class="toggle-btn">View Raw JSON</button>
+                </div>
+
+                <div class="result-scroll-area">
+                    <div id="result-plaintext"></div>
+                    <pre id="result-json" class="result-json" style="display:none;"></pre>
+                </div>
+
+                <button type="button" id="goBack" class="action-btn outline">
+                    <span>Scan Another Document</span>
+                    <span class="arrow">↺</span>
+                </button>
+            </div>
+
         </div>
     </div>
 
     <script>
+        // UI State Manager
+        function switchState(stateId) {
+            document.querySelectorAll('.view-state').forEach(el => {
+                el.classList.remove('active');
+            });
+            const activeEl = document.getElementById(stateId);
+            activeEl.classList.add('active');
+        }
+
+        // Drag and Drop Logic
         function wireDrop(dropId, inputId) {
             const drop = document.getElementById(dropId);
             const input = document.getElementById(inputId);
@@ -500,7 +594,7 @@
 
             trashBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation(); // Prevents the label from triggering file selection
+                e.stopPropagation();
                 input.value = '';
                 const img = drop.querySelector('img');
                 if (img) img.remove();
@@ -530,28 +624,42 @@
         wireDrop('dropFront', 'front');
         wireDrop('dropBack', 'back');
 
+        // Toggle JSON View
         let showingJson = false;
-
         document.getElementById('toggleView').addEventListener('click', (e) => {
             showingJson = !showingJson;
             document.getElementById('result-plaintext').style.display = showingJson ? 'none' : 'block';
             document.getElementById('result-json').style.display = showingJson ? 'block' : 'none';
-            e.target.textContent = showingJson ? 'Show Plaintext' : 'Show JSON';
+            e.target.textContent = showingJson ? 'View Formatted Text' : 'View Raw JSON';
         });
 
+        // Reset App State
+        document.getElementById('goBack').addEventListener('click', () => {
+            document.getElementById('uploadForm').reset();
+            ['dropFront', 'dropBack'].forEach(id => {
+                const drop = document.getElementById(id);
+                const img = drop.querySelector('img');
+                if (img) img.remove();
+                drop.classList.remove('filled');
+                drop.querySelector('.trash-btn').style.display = 'none';
+            });
+            document.getElementById('error-msg').style.display = 'none';
+            showingJson = false;
+            document.getElementById('result-plaintext').style.display = 'block';
+            document.getElementById('result-json').style.display = 'none';
+            document.getElementById('toggleView').textContent = 'View Raw JSON';
+
+            switchState('state-upload');
+        });
+
+        // Form Submission
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
-            const statusEl = document.getElementById('status');
-            const resultBox = document.getElementById('result-box');
-            const resultPt = document.getElementById('result-plaintext');
-            const resultJson = document.getElementById('result-json');
-            const submitBtn = e.target.querySelector('button.submit');
+            const errorMsg = document.getElementById('error-msg');
+            errorMsg.style.display = 'none';
 
-            statusEl.textContent = 'Reading document…';
-            statusEl.className = 'loading';
-            resultBox.style.display = 'none';
-            resultBox.className = 'result-box';
-            submitBtn.disabled = true;
+            // Transition to loading screen
+            switchState('state-loading');
 
             const formData = new FormData();
             formData.append('front_image', document.getElementById('front').files[0]);
@@ -561,35 +669,36 @@
                 const response = await fetch('/parse-nid', { method: 'POST', body: formData });
                 const data = await response.json();
 
-                statusEl.className = '';
-                statusEl.textContent = response.ok ? 'Done' : 'Something went wrong';
-                if (!response.ok) statusEl.className = 'err';
+                // Intercept the data to delete the blood group field from the UI
+                delete data.bloodGroup;
+                delete data.blood_group;
 
-                // Format plaintext
-                let ptHtml = '';
-                for (const [key, value] of Object.entries(data)) {
-                    // Convert camelCase keys to spaced strings for readibility
-                    const formattedKey = key.replace(/([A-Z])/g, ' $1').trim();
-                    ptHtml += `<div class="kv-pair"><span class="kv-key">${formattedKey}:</span> <span class="kv-val">${value || 'N/A'}</span></div>`;
+                if (!response.ok) {
+                    throw new Error('Server returned an error.');
                 }
 
-                resultPt.innerHTML = ptHtml;
-                resultJson.textContent = JSON.stringify(data, null, 2);
+                // Format plaintext using Flexbox hierarchy
+                let ptHtml = '';
+                for (const [key, value] of Object.entries(data)) {
+                    const formattedKey = key.replace(/([A-Z])/g, ' $1').trim();
+                    ptHtml += `
+                        <div class="kv-pair">
+                            <div class="kv-key">${formattedKey}</div>
+                            <div class="kv-val">${value || 'N/A'}</div>
+                        </div>`;
+                }
 
-                // Reset view state to plaintext default
-                showingJson = false;
-                document.getElementById('toggleView').textContent = 'Show JSON';
-                resultPt.style.display = 'block';
-                resultJson.style.display = 'none';
+                document.getElementById('result-plaintext').innerHTML = ptHtml;
+                document.getElementById('result-json').textContent = JSON.stringify(data, null, 2);
 
-                resultBox.style.display = 'block';
-                void resultBox.offsetWidth; // Trigger reflow for animation
-                resultBox.classList.add('fade-in');
+                // Transition to results screen
+                switchState('state-result');
+
             } catch (err) {
-                statusEl.className = 'err';
-                statusEl.textContent = 'Could not reach the server.';
-            } finally {
-                submitBtn.disabled = false;
+                // If it fails, go back to the form and show error
+                switchState('state-upload');
+                errorMsg.textContent = 'Network error or unable to process the document.';
+                errorMsg.style.display = 'block';
             }
         };
     </script>
