@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>NID Parser</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .upload-box {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>AI-Powered NID Parser</h2>
+    <form id="uploadForm">
+        <div class="upload-box">
+            <label>Front Image: <input type="file" id="front" accept="image/*" required></label>
+        </div>
+        <div class="upload-box">
+            <label>Back Image: <input type="file" id="back" accept="image/*" required></label>
+        </div>
+        <button type="submit"
+            style="padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer;">Parse
+            NID</button>
+    </form>
+    <h3 id="status"></h3>
+    <pre id="result"></pre>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            document.getElementById('status').innerText = "Processing...";
+            document.getElementById('result').innerText = "";
+
+            const formData = new FormData();
+            formData.append('front_image', document.getElementById('front').files[0]);
+            formData.append('back_image', document.getElementById('back').files[0]);
+
+            try {
+                const response = await fetch('/parse-nid', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                document.getElementById('status').innerText = response.ok ? "Extraction Complete" : "Error Occurred";
+                document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+            } catch (err) {
+                document.getElementById('status').innerText = "Failed to connect to API.";
+            }
+        };
+    </script>
+</body>
+
+</html>
