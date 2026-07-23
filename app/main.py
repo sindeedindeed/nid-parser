@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from app.utils import validate_image
+from app.services import extract_nid_data
 
 app = FastAPI(
     title = "NID Parser API",
@@ -23,9 +24,6 @@ async def parse_nid(
     front_bytes = await validate_image(front_image, "front")
     back_bytes = await validate_image(back_image, "back")
     
-    return {
-        "status": "Success",
-        "message": "Validation successful. Ready for OCR",
-        "front_image_size": len(front_bytes),
-        "back_image_size": len(back_bytes)
-    }
+    extracted_data = extract_nid_data(front_bytes, back_bytes)
+
+    return extracted_data
