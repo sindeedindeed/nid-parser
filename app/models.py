@@ -7,8 +7,9 @@ class NIDResponse(BaseModel):
     mother_name: Optional[str] = Field(None, alias="motherName")
     date_of_birth: Optional[str] = Field(None, alias="dateOfBirth", description="YYYY-MM-DD")
     nid_number: Optional[str] = Field(None, alias="nidNumber")
-    present_address: Optional[str] = Field(None, alias="presentAddress")
-    permanent_address: Optional[str] = Field(None, alias="permanentAddress")
+    address: Optional[str] = Field(None, alias="Address")
+    blood_group: Optional[str] = Field(None, alias="bloodGroup")
+    issue_date: Optional[str] = Field(None, alias="issueDate", description="YYYY-MM-DD")
     
     class Config:
         populate_by_name = True
