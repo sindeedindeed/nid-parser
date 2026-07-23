@@ -667,15 +667,19 @@
 
             try {
                 const response = await fetch('/parse-nid', { method: 'POST', body: formData });
+
+                // Parse the response body whether it is a success or an error
                 const data = await response.json();
+
+                if (!response.ok) {
+                    // FastAPI usually sends validation errors in 'detail' or custom errors in 'error'
+                    const errorMessage = data.detail || data.error || 'Unable to process the document.';
+                    throw new Error(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
+                }
 
                 // Intercept the data to delete the blood group field from the UI
                 delete data.bloodGroup;
                 delete data.blood_group;
-
-                if (!response.ok) {
-                    throw new Error('Server returned an error.');
-                }
 
                 // Format plaintext using Flexbox hierarchy
                 let ptHtml = '';
@@ -687,7 +691,6 @@
                     if (value && (key.toLowerCase().includes('date') || key.toLowerCase().includes('dob'))) {
                         const dateParts = value.split('-');
                         if (dateParts.length === 3) {
-                            // backend returns standard YYYY-MM-DD
                             displayVal = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
                         }
                     }
@@ -706,9 +709,16 @@
                 switchState('state-result');
 
             } catch (err) {
-                // If it fails, go back to the form and show error
+                // If it fails, go back to the form and show the specific error
                 switchState('state-upload');
-                errorMsg.textContent = 'Network error or unable to process the document.';
+
+                // Check if it is a network failure vs a backend error
+                if (err.message === 'Failed to fetch') {
+                    errorMsg.textContent = 'Network error: Could not reach the server.';
+                } else {
+                    errorMsg.textContent = err.message;
+                }
+
                 errorMsg.style.display = 'block';
             }
         };
